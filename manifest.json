@@ -2,7 +2,7 @@
     "manifest_version": 3,
     "name": "YouTube Video Summarizer",
     "version": "1.0.0",
-    "description": "Summarize YouTube videos and get related video recommendations",
+    "description": "Summarize YouTube videos using Gemini AI",
     "permissions": [
       "activeTab",
       "storage",
@@ -10,27 +10,28 @@
     ],
     "host_permissions": [
       "https://www.youtube.com/*",
-      "https://youtube.com/*"
+      "https://youtube.com/*",
+      "https://*.youtube.com/*"
     ],
     "background": {
       "service_worker": "background.js"
     },
     "content_scripts": [
       {
-        "matches": ["https://www.youtube.com/watch*"],
+        "matches": [
+          "https://www.youtube.com/watch*",
+          "https://youtube.com/watch*",
+          "https://*.youtube.com/watch*"
+        ],
         "js": ["content.js"],
-        "css": ["styles.css"]
+        "css": ["styles.css"],
+        "run_at": "document_end"
       }
     ],
     "web_accessible_resources": [
       {
-        "resources": ["popup.html", "icons/*"],
-        "matches": ["https://www.youtube.com/*"]
+        "resources": ["*"],
+        "matches": ["https://*.youtube.com/*"]
       }
-    ],
-    "icons": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  } 
+    ]
+  }

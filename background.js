@@ -1,7 +1,8 @@
 class VideoAnalyzer {
     constructor() {
-      this.OPENAI_API_KEY = 'your-openai-api-key'; // Replace with your key
-      this.YOUTUBE_API_KEY = 'your-youtube-api-key'; // Replace with your key
+      this.GEMINI_API_KEY = process.env.GEMINI_API_KEY; // Replace with your key
+      this.YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY; // Replace with your key
+      this.GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
       this.init();
     }
   
@@ -116,36 +117,47 @@ class VideoAnalyzer {
       `;
   
       try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        const response = await fetch(`${this.GEMINI_API_URL}?key=${this.GEMINI_API_KEY}`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.OPENAI_API_KEY}`
           },
           body: JSON.stringify({
-            model: 'gpt-3.5-turbo',
-            messages: [
-              { role: 'system', content: 'You are a helpful assistant that summarizes YouTube videos concisely and accurately.' },
-              { role: 'user', content: prompt }
-            ],
-            max_tokens: 500,
-            temperature: 0.3
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.3,
+              topK: 40,
+              topP: 0.95,
+              maxOutputTokens: 500,
+            }
           })
         });
   
         const data = await response.json();
-        const content = data.choices[0].message.content;
         
-        try {
-          return JSON.parse(content);
-        } catch (parseError) {
-          // Fallback if JSON parsing fails
-          return {
-            summary: content.substring(0, 200) + '...',
-            keyPoints: ['Summary generated successfully'],
-            topics: ['General']
-          };
+        if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+          const content = data.candidates[0].content.parts[0].text;
+          
+          try {
+            // Try to extract JSON from the response
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              return JSON.parse(jsonMatch[0]);
+            }
+            
+            // Fallback parsing if no JSON found
+            return this.parseGeminiResponse(content, videoData);
+          } catch (parseError) {
+            console.warn('JSON parsing failed, using fallback:', parseError);
+            return this.parseGeminiResponse(content, videoData);
+          }
         }
+        
+        throw new Error('Invalid response from Gemini API');
       } catch (error) {
         console.error('Error generating AI summary:', error);
         // Fallback summary
@@ -159,6 +171,37 @@ class VideoAnalyzer {
           topics: ['General']
         };
       }
+    }
+  
+    parseGeminiResponse(content, videoData) {
+      // Extract information from unstructured response
+      const lines = content.split('\n').filter(line => line.trim());
+      
+      let summary = '';
+      let keyPoints = [];
+      let topics = [];
+      
+      // Try to extract summary (usually first few lines)
+      const summaryLines = lines.slice(0, 3).join(' ');
+      summary = summaryLines.length > 50 ? summaryLines.substring(0, 200) + '...' : 
+                `This video "${videoData.title}" provides valuable insights on the topic.`;
+      
+      // Extract key points (look for bullet points or numbered items)
+      for (const line of lines) {
+        if (line.match(/^[\d\-\*•]/)) {
+          keyPoints.push(line.replace(/^[\d\-\*•\s]+/, '').trim());
+        }
+      }
+      
+      if (keyPoints.length === 0) {
+        keyPoints = [
+          'Informative content provided',
+          'Educational value present',
+          'Worth watching for the topic'
+        ];
+      }
+      
+      return { summary, keyPoints: keyPoints.slice(0, 5), topics: ['General'] };
     }
   
     async getRelatedVideos(videoData) {
@@ -198,4 +241,4 @@ class VideoAnalyzer {
   }
   
   // Initialize the analyzer
-  new VideoAnalyzer();      
+  new VideoAnalyzer();

@@ -1,3 +1,4 @@
+// content.js - Injects into YouTube pages
 class YouTubeSummarizer {
     constructor() {
       this.isInjected = false;
@@ -7,15 +8,24 @@ class YouTubeSummarizer {
     }
   
     init() {
+      console.log('YouTube Summarizer initializing...'); // Debug log
+      
       // Wait for YouTube to load
       if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => this.checkForVideo());
+        document.addEventListener('DOMContentLoaded', () => {
+          console.log('DOM loaded, checking for video...'); // Debug log
+          setTimeout(() => this.checkForVideo(), 1000);
+        });
       } else {
-        this.checkForVideo();
+        console.log('DOM already loaded, checking for video...'); // Debug log
+        setTimeout(() => this.checkForVideo(), 1000);
       }
   
       // Listen for navigation changes (YouTube is SPA)
       this.observeUrlChanges();
+      
+      // Also listen for any dynamic content changes
+      this.observePageChanges();
     }
   
     observeUrlChanges() {
@@ -24,15 +34,43 @@ class YouTubeSummarizer {
         const url = location.href;
         if (url !== lastUrl) {
           lastUrl = url;
-          setTimeout(() => this.checkForVideo(), 1000); // Delay for YouTube to load
+          console.log('URL changed to:', url); // Debug log
+          setTimeout(() => this.checkForVideo(), 2000); // Increased delay
         }
       }).observe(document, { subtree: true, childList: true });
     }
   
+    observePageChanges() {
+      // Watch for YouTube's dynamic content loading
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.type === 'childList') {
+            // Check if video title or main content has loaded
+            const hasVideoTitle = document.querySelector('h1.ytd-video-primary-info-renderer');
+            const hasVideoPlayer = document.querySelector('#movie_player');
+            
+            if (hasVideoTitle && hasVideoPlayer && !this.summaryButton) {
+              console.log('Video content detected, injecting button...'); // Debug log
+              setTimeout(() => this.checkForVideo(), 500);
+            }
+          }
+        });
+      });
+  
+      // Observe the main content area
+      const mainContent = document.querySelector('#content') || document.body;
+      observer.observe(mainContent, {
+        childList: true,
+        subtree: true
+      });
+    }
+  
     checkForVideo() {
       const videoId = this.extractVideoId();
+      console.log('Checking for video, ID:', videoId); // Debug log
       if (videoId && videoId !== this.currentVideoId) {
         this.currentVideoId = videoId;
+        console.log('New video detected, injecting button'); // Debug log
         this.injectSummaryButton();
       }
     }
@@ -48,20 +86,58 @@ class YouTubeSummarizer {
         this.summaryButton.remove();
       }
   
-      // Wait for video player controls to load
-      const checkForControls = setInterval(() => {
-        const controls = document.querySelector('#above-the-fold #top-row');
-        if (controls) {
-          clearInterval(checkForControls);
-          this.createSummaryButton(controls);
+      console.log('Attempting to inject button...'); // Debug log
+  
+      // Multiple strategies to find the right place to inject
+      const strategies = [
+        // Strategy 1: Modern YouTube layout
+        () => document.querySelector('#above-the-fold #top-row'),
+        // Strategy 2: Alternative selector
+        () => document.querySelector('#primary-inner #above-the-fold'),
+        // Strategy 3: Video title area
+        () => document.querySelector('#container h1')?.parentElement,
+        // Strategy 4: Actions area
+        () => document.querySelector('#actions'),
+        // Strategy 5: Fallback - any primary content area
+        () => document.querySelector('#primary #container')
+      ];
+  
+      let targetElement = null;
+      for (const strategy of strategies) {
+        try {
+          targetElement = strategy();
+          if (targetElement) {
+            console.log('Found target element using strategy'); // Debug log
+            break;
+          }
+        } catch (e) {
+          console.warn('Strategy failed:', e);
         }
-      }, 500);
+      }
+  
+      if (!targetElement) {
+        console.warn('Could not find target element, retrying...'); // Debug log
+        // Retry after a longer delay
+        setTimeout(() => this.injectSummaryButton(), 2000);
+        return;
+      }
+  
+      this.createSummaryButton(targetElement);
     }
   
     createSummaryButton(parentElement) {
+      console.log('Creating summary button...'); // Debug log
+      
       // Create button container
       const buttonContainer = document.createElement('div');
       buttonContainer.id = 'yt-summarizer-container';
+      buttonContainer.style.cssText = `
+        margin: 12px 0;
+        display: flex;
+        align-items: center;
+        z-index: 1000;
+      `;
+      
       buttonContainer.innerHTML = `
         <button id="yt-summarizer-btn" class="yt-summarizer-button">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -85,13 +161,27 @@ class YouTubeSummarizer {
         </div>
       `;
   
-      // Insert after video title
-      const titleElement = parentElement.querySelector('#container h1');
-      if (titleElement) {
-        titleElement.parentNode.insertBefore(buttonContainer, titleElement.nextSibling);
+      // Try different insertion strategies
+      try {
+        // Strategy 1: Insert after the element
+        parentElement.insertAdjacentElement('afterend', buttonContainer);
+      } catch (e) {
+        try {
+          // Strategy 2: Append to the element
+          parentElement.appendChild(buttonContainer);
+        } catch (e2) {
+          try {
+            // Strategy 3: Insert at the beginning
+            parentElement.insertAdjacentElement('afterbegin', buttonContainer);
+          } catch (e3) {
+            console.error('All insertion strategies failed:', e3);
+            return;
+          }
+        }
       }
   
       this.summaryButton = buttonContainer;
+      console.log('Button created and inserted successfully!'); // Debug log
       this.attachEventListeners();
     }
   
