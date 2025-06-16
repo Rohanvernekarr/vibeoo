@@ -45,7 +45,7 @@ class VideoAnalyzer {
   
     async getVideoTranscript(videoId) {
       try {
-        // Method 1: Try to get captions from YouTube API
+        //  Try to get captions from YouTube API
         const captionsResponse = await fetch(
           `https://www.googleapis.com/youtube/v3/captions?part=snippet&videoId=${videoId}&key=${this.YOUTUBE_API_KEY}`
         );
@@ -59,7 +59,7 @@ class VideoAnalyzer {
           }
         }
         
-        // Method 2: Fallback to description-based analysis
+        // Fallback to description-based analysis
         return this.extractContentFromDescription(videoId);
       } catch (error) {
         console.warn('Could not get transcript:', error);
