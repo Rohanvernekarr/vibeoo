@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "YouTube Video Summarizer",
-    "version": "1.0.0",
-    "description": "Summarize YouTube videos using Gemini AI",
+    "name": "YouTube Video Summarizer & Timestamps",
+    "version": "2.0.0",
+    "description": "Summarize YouTube videos with timestamps using Gemini AI and YouTube API",
     "permissions": [
       "activeTab",
       "storage",
@@ -11,7 +11,9 @@
     "host_permissions": [
       "https://www.youtube.com/*",
       "https://youtube.com/*",
-      "https://*.youtube.com/*"
+      "https://*.youtube.com/*",
+      "https://generativelanguage.googleapis.com/*",
+      "https://www.googleapis.com/*"
     ],
     "background": {
       "service_worker": "background.js"
@@ -30,8 +32,13 @@
     ],
     "web_accessible_resources": [
       {
-        "resources": ["*"],
+        "resources": ["styles.css"],
         "matches": ["https://*.youtube.com/*"]
       }
-    ]
+    ],
+    "icons": {
+      "16": "icons/icon1.png",
+      "48": "icons/icon1.png",
+      "128": "icons/icon1.png"
+    }
   }

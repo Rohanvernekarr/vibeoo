@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Summarizer Setup</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 28px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+        }
+        .btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        .instructions {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+            color: #ffd700;
+        }
+        .instructions ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .status.success {
+            background: rgba(34, 197, 94, 0.3);
+            border: 1px solid rgba(34, 197, 94, 0.5);
+        }
+        .status.error {
+            background: rgba(239, 68, 68, 0.3);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+        }
+        .copy-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 YouTube Summarizer Setup</h1>
+        
+        <div class="instructions">
+            <h3>📋 Setup Instructions</h3>
+            <ol>
+                <li>Get your API keys (see links below)</li>
+                <li>Enter your API keys in the form</li>
+                <li>Click "Generate Config" to create the config file</li>
+                <li>Copy the generated code to your <code>config.js</code> file</li>
+            </ol>
+        </div>
+
+        <form id="setupForm">
+            <div class="form-group">
+                <label for="geminiKey">Gemini API Key:</label>
+                <input type="text" id="geminiKey" placeholder="Enter your Gemini API key">
+                <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener" class="copy-btn">Get Key</a>
+            </div>
+            
+            <div class="form-group">
+                <label for="youtubeKey">YouTube API Key:</label>
+                <input type="text" id="youtubeKey" placeholder="Enter your YouTube API key">
+                <a href="https://console.cloud.google.com/" target="_blank" rel="noopener" class="copy-btn">Get Key</a>
+            </div>
+            
+            <button type="submit" class="btn">Generate Config</button>
+        </form>
+
+        <div id="status" class="status" style="display: none;"></div>
+
+        <div id="configOutput" style="display: none;">
+            <h3>📄 Generated Config Code</h3>
+            <p>Copy this code and replace the content of your <code>config.js</code> file:</p>
+            <pre id="configCode" style="background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px; overflow-x: auto; font-size: 12px;"></pre>
+            <button onclick="copyConfig()" class="btn" style="margin-top: 15px;">Copy to Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('setupForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const geminiKey = document.getElementById('geminiKey').value.trim();
+            const youtubeKey = document.getElementById('youtubeKey').value.trim();
+            
+            if (!geminiKey || !youtubeKey) {
+                showStatus('Please enter both API keys', 'error');
+                return;
+            }
+            
+            const configCode = `// config.js - Configuration file for API keys and settings
+const CONFIG = {
+  // Replace these with your actual API keys
+  GEMINI_API_KEY: '${geminiKey}',
+  YOUTUBE_API_KEY: '${youtubeKey}',
+  
+  // API endpoints
+  GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+  YOUTUBE_API_BASE: 'https://www.googleapis.com/youtube/v3',
+  
+  // Extension settings
+  MAX_SUMMARY_LENGTH: 2000,
+  MAX_TIMESTAMPS: 10,
+  TIMESTAMP_THRESHOLD: 30, // seconds between timestamps
+  
+  // UI settings
+  POPUP_WIDTH: 700,
+  POPUP_HEIGHT: 600
+};
+
+// Export for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = CONFIG;
+} else {
+  window.CONFIG = CONFIG;
+}`;
+            
+            document.getElementById('configCode').textContent = configCode;
+            document.getElementById('configOutput').style.display = 'block';
+            showStatus('Config generated successfully! Copy the code to your config.js file.', 'success');
+        });
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+            
+            setTimeout(() => {
+                status.style.display = 'none';
+            }, 5000);
+        }
+        
+        function copyConfig() {
+            const configCode = document.getElementById('configCode').textContent;
+            navigator.clipboard.writeText(configCode).then(() => {
+                showStatus('Config code copied to clipboard!', 'success');
+            }).catch(() => {
+                showStatus('Failed to copy. Please copy manually.', 'error');
+            });
+        }
+    </script>
+</body>
+</html> 
