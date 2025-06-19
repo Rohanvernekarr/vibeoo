@@ -1,8 +1,8 @@
 // config.js - Configuration file for API keys and settings
 const CONFIG = {
   // Replace these with your actual API keys
-  GEMINI_API_KEY: 'AIzaSyBVc64e42TzQDMWK0OkZTz_DzbOcIGfwJs',
-  YOUTUBE_API_KEY: 'AIzaSyD-oUfK9ApNBpTi5v6MPNMtZCdl-JI1qP8',
+  GEMINI_API_KEY: '',
+  YOUTUBE_API_KEY: '',
   
   // API endpoints
   GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
